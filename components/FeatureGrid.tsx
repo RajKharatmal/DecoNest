@@ -23,9 +23,14 @@ const features: Feature[] = [
 
 interface FeatureGridProps {
   onFeatureSelect: (feature: Feature) => void;
+  onViewHistory: () => void;
 }
 
-export const FeatureGrid: React.FC<FeatureGridProps> = ({ onFeatureSelect }) => {
+const HistoryIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+);
+
+export const FeatureGrid: React.FC<FeatureGridProps> = ({ onFeatureSelect, onViewHistory }) => {
   return (
     <div className="text-center">
        <h1 
@@ -40,9 +45,9 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ onFeatureSelect }) => 
       >
         Take your tools, your weapons!!
       </p>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {features.map((feature) => (
-          <button 
+          <button
             key={feature.id}
             onClick={() => onFeatureSelect(feature)}
             className="bg-white/80 p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 text-left flex flex-col items-start aspect-square justify-between group hover:bg-white"
@@ -55,6 +60,14 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({ onFeatureSelect }) => 
           </button>
         ))}
       </div>
+
+      <button
+        onClick={onViewHistory}
+        className="w-full bg-brand-accent text-white font-bold py-3 px-4 rounded-xl shadow-md hover:bg-brand-primary transition-colors duration-300 flex items-center justify-center gap-2"
+      >
+        <HistoryIcon className="w-5 h-5" />
+        View Your Design History
+      </button>
     </div>
   );
 };

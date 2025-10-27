@@ -6,10 +6,12 @@ import { ResultsDisplay } from './components/ResultsDisplay';
 import { LoadingView } from './components/LoadingView';
 import { ColorPaletteSelector } from './components/ColorPaletteSelector';
 import { EmailCollector } from './components/EmailCollector';
+import { History } from './components/History';
 import type { Feature } from './types';
 import { generateDesign } from './services/geminiService';
+import { saveUser, saveDesign, getUserByEmail } from './services/databaseService';
 
-type View = 'WELCOME' | 'EMAIL_COLLECTION' | 'HOME' | 'UPLOADING' | 'COLOR_SELECTION' | 'PROCESSING' | 'RESULTS';
+type View = 'WELCOME' | 'EMAIL_COLLECTION' | 'HOME' | 'UPLOADING' | 'COLOR_SELECTION' | 'PROCESSING' | 'RESULTS' | 'HISTORY';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('WELCOME');
@@ -19,10 +21,16 @@ const App: React.FC = () => {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mimeType, setMimeType] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
   
   useEffect(() => {
     const savedEmail = localStorage.getItem('userEmail');
     if (savedEmail) {
+      getUserByEmail(savedEmail).then(user => {
+        if (user) {
+          setUserId(user.id);
+        }
+      });
       setView('HOME');
     } else {
       setView('WELCOME');
@@ -33,8 +41,12 @@ const App: React.FC = () => {
     setView('EMAIL_COLLECTION');
   }
 
-  const handleEmailSubmit = (email: string) => {
+  const handleEmailSubmit = async (email: string) => {
     localStorage.setItem('userEmail', email);
+    const user = await saveUser(email);
+    if (user) {
+      setUserId(user.id);
+    }
     setView('HOME');
   };
 
@@ -65,7 +77,18 @@ const App: React.FC = () => {
             const generatedImage = await generateDesign(selectedFeature, base64Data, file.type, null);
 
             if (generatedImage) {
-              setResultImage(`data:image/jpeg;base64,${generatedImage}`);
+              const resultUrl = `data:image/jpeg;base64,${generatedImage}`;
+              setResultImage(resultUrl);
+
+              if (userId) {
+                await saveDesign(
+                  userId,
+                  selectedFeature.id,
+                  reader.result as string,
+                  resultUrl,
+                  null
+                );
+              }
             }
             setView('RESULTS');
           } catch (e) {
@@ -94,7 +117,18 @@ const App: React.FC = () => {
       const generatedImage = await generateDesign(selectedFeature, base64Data, mimeType, color);
 
       if (generatedImage) {
-        setResultImage(`data:image/jpeg;base64,${generatedImage}`);
+        const resultUrl = `data:image/jpeg;base64,${generatedImage}`;
+        setResultImage(resultUrl);
+
+        if (userId) {
+          await saveDesign(
+            userId,
+            selectedFeature.id,
+            originalImage,
+            resultUrl,
+            color
+          );
+        }
       }
       setView('RESULTS');
     } catch (e) {
@@ -113,6 +147,15 @@ const App: React.FC = () => {
     setError(null);
     setMimeType('');
     setSelectedColor(null);
+    setUserId(null);
+  };
+
+  const handleViewHistory = () => {
+    setView('HISTORY');
+  };
+
+  const handleHistoryBack = () => {
+    setView('HOME');
   };
 
   const handleBackToUploader = () => {
@@ -136,7 +179,7 @@ const App: React.FC = () => {
         return <EmailCollector onEmailSubmit={handleEmailSubmit} />;
       case 'HOME':
         return (
-            <FeatureGrid onFeatureSelect={handleFeatureSelect} />
+            <FeatureGrid onFeatureSelect={handleFeatureSelect} onViewHistory={handleViewHistory} />
         );
       case 'UPLOADING':
         return (
@@ -160,13 +203,17 @@ const App: React.FC = () => {
         return <LoadingView feature={selectedFeature} image={originalImage} />;
       case 'RESULTS':
         return (
-          <ResultsDisplay 
-            originalImage={originalImage} 
-            resultImage={resultImage} 
+          <ResultsDisplay
+            originalImage={originalImage}
+            resultImage={resultImage}
             featureTitle={selectedFeature?.title || ''}
             onReset={handleReset}
             onBack={handleBackToUploader}
           />
+        );
+      case 'HISTORY':
+        return (
+          <History userId={userId} onBack={handleHistoryBack} />
         );
       default:
         return null;
