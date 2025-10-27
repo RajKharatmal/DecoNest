@@ -1,0 +1,7 @@
+{
+  "name": "DecoNest",
+  "description": "An AI-powered interior design assistant to help you visualize changes to your home. Features include style transfer, auto-furnishing, repainting walls, and changing floors.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
